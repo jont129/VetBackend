@@ -8,8 +8,16 @@ import java.math.BigDecimal;
 
 @Data
 public class ServicioReq {
-    @NotBlank @Size(max = 120) private String nombre;
-    @Size(max = 250) private String descripcion;
-    @PositiveOrZero(message = "precio_base >= 0") private BigDecimal precioBase;
+    @NotBlank @Size(max = 120)
+    private String nombre;
+
+    @Size(max = 250)
+    private String descripcion;
+
+    @PositiveOrZero(message = "precio_base >= 0")
+    @Digits(integer = 10, fraction = 2)
+    private BigDecimal precioBase;
+
+    /** Opcional. Si viene null, el servicio se crea activo por defecto. */
     private Boolean activo;
 }
