@@ -18,6 +18,22 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
+/**
+ * Servicio de negocio para {@link Motivo}.
+ *
+ * Responsabilidades:
+ * - Crear, actualizar, obtener y listar motivos.
+ * - Vincular y desvincular motivos con servicios.
+ *
+ * Invariantes:
+ * - Nombre único, normalizado (espacios colapsados).
+ *
+ * Transaccionalidad:
+ * - Lecturas con readOnly.
+ * - Escrituras con control de unicidad.
+ *
+ * @since 1.0
+ */
 @Service
 @Transactional
 public class MotivoServiceImpl implements MotivoService {
@@ -36,6 +52,13 @@ public class MotivoServiceImpl implements MotivoService {
         this.servicioRepo = servicioRepo;
     }
 
+    /**
+     * Crea un motivo cumpliendo unicidad por nombre.
+     *
+     * @param req comando con nombre del motivo.
+     * @return DTO del motivo creado.
+     * @throws IllegalArgumentException si nombre es nulo/vacío o duplicado.
+     */
     @Override
     public MotivoRes crear(MotivoReq req) {
         if (req.getNombre() == null || req.getNombre().isBlank())
@@ -53,6 +76,15 @@ public class MotivoServiceImpl implements MotivoService {
         }
     }
 
+    /**
+     * Actualiza el nombre del motivo.
+     *
+     * @param id  identificador del motivo.
+     * @param req comando con nuevo nombre.
+     * @return DTO actualizado.
+     * @throws NoSuchElementException   si no existe.
+     * @throws IllegalArgumentException si nombre es inválido o duplicado.
+     */
     @Override
     public MotivoRes actualizar(Short id, MotivoReq req) {
         if (req.getNombre() == null || req.getNombre().isBlank())
@@ -76,18 +108,37 @@ public class MotivoServiceImpl implements MotivoService {
         }
     }
 
+    /**
+     * Obtiene un motivo por id.
+     *
+     * @param id identificador.
+     * @return DTO del motivo.
+     * @throws NoSuchElementException si no existe.
+     */
     @Override
     @Transactional(readOnly = true)
     public MotivoRes obtener(Short id) {
         return map(motivoRepo.findById(id).orElseThrow(() -> new NoSuchElementException(ERR_NO_ENCONTRADO)));
     }
 
+    /**
+     * Lista todos los motivos.
+     *
+     * @return lista de DTOs.
+     */
     @Override
     @Transactional(readOnly = true)
     public List<MotivoRes> listar() {
         return motivoRepo.findAll().stream().map(MotivoServiceImpl::map).collect(Collectors.toList());
     }
 
+    /**
+     * Crea la relación Motivo-Servicio si no existe.
+     *
+     * @param motivoId  id del motivo.
+     * @param servicioId id del servicio.
+     * @throws NoSuchElementException si alguno no existe.
+     */
     @Override
     public void vincular(Short motivoId, Long servicioId) {
         if (!msRepo.existsByMotivoIdAndServicioId(motivoId, servicioId)) {
@@ -97,10 +148,22 @@ public class MotivoServiceImpl implements MotivoService {
         }
     }
 
+    /**
+     * Elimina la relación Motivo-Servicio si existe.
+     *
+     * @param motivoId  id del motivo.
+     * @param servicioId id del servicio.
+     */
     @Override
     public void desvincular(Short motivoId, Long servicioId) {
         msRepo.deleteByMotivoIdAndServicioId(motivoId, servicioId);
     }
 
+    /**
+     * Mapea entidad a DTO.
+     *
+     * @param m entidad motivo.
+     * @return DTO.
+     */
     private static MotivoRes map(Motivo m) { return new MotivoRes(m.getId(), m.getNombre()); }
 }

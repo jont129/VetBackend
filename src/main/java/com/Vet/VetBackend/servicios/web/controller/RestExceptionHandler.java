@@ -12,34 +12,58 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.*;
 
+/**
+ * Mapeo centralizado de excepciones a respuestas JSON.
+ *
+ * Formato:
+ * {
+ *   "code": "ERROR_CODE",
+ *   "message": "detalle",
+ *   "timestamp": ISO_DATE
+ * }
+ *
+ * @since 1.0
+ */
 @RestControllerAdvice
 public class RestExceptionHandler {
 
+    /**
+     * 404 Not Found para recursos inexistentes.
+     */
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, Object>> notFound(NoSuchElementException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err("NOT_FOUND", ex.getMessage()));
     }
 
+    /**
+     * 400 Bad Request para errores de validación de negocio.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> badRequest(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err("BAD_REQUEST", ex.getMessage()));
     }
 
-    /** Body JSON inválido o Content-Type incorrecto */
+    /**
+     * 400 por JSON inválido o Content-Type incorrecto.
+     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> badJson(HttpMessageNotReadableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(err("BAD_JSON", "cuerpo inválido o Content-Type ausente/incorrecto"));
     }
 
-    /** Path/query param con tipo incorrecto (p.ej., id no numérico) */
+    /**
+     * 400 por tipos incorrectos en path/query.
+     */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, Object>> typeMismatch(MethodArgumentTypeMismatchException ex) {
         String msg = "parámetro '" + ex.getName() + "' inválido";
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err("TYPE_MISMATCH", msg));
     }
 
-    /** Bean Validation en body */
+    /**
+     * 400 por Bean Validation en request body.
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> bodyValidation(MethodArgumentNotValidException ex) {
         Map<String, Object> payload = err("VALIDATION_ERROR", "entrada inválida");
@@ -52,7 +76,9 @@ public class RestExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(payload);
     }
 
-    /** Bean Validation en params/path */
+    /**
+     * 400 por Bean Validation en parámetros/path.
+     */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Map<String, Object>> paramValidation(ConstraintViolationException ex) {
         Map<String, Object> payload = err("VALIDATION_ERROR", "parámetros inválidos");
@@ -65,24 +91,32 @@ public class RestExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(payload);
     }
 
-    /** Unicidad / FK */
+    /**
+     * 409 Conflict por unicidad o restricciones FK.
+     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> conflict(DataIntegrityViolationException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(err("CONFLICT", "violación de integridad"));
     }
 
-    /** Problemas de persistencia típicos (p.ej., falta AUTO_INCREMENT) */
+    /**
+     * 400 por errores de persistencia comunes.
+     */
     @ExceptionHandler(PersistenceException.class)
     public ResponseEntity<Map<String, Object>> persistence(PersistenceException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(err("PERSISTENCE_ERROR", "no se pudo persistir: revise AUTO_INCREMENT o constraints"));
     }
 
+    /**
+     * 500 para errores no manejados.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> unhandled(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err("ERROR", "error inesperado"));
     }
 
+    /** Construye payload de error estándar. */
     private Map<String, Object> err(String code, String msg) {
         return new LinkedHashMap<>() {{
             put("code", code);

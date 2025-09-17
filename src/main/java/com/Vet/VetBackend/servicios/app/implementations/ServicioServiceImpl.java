@@ -16,6 +16,19 @@ import java.math.BigDecimal;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+/**
+ * Servicio de negocio para {@link Servicio}.
+ *
+ * Responsabilidades:
+ * - CRUD, activación y listado filtrado.
+ * - Validación y normalización de nombre.
+ *
+ * Reglas:
+ * - Nombre único.
+ * - precioBase ≥ 0.
+ *
+ * @since 1.0
+ */
 @Service
 @Transactional
 public class ServicioServiceImpl implements ServicioService {
@@ -27,6 +40,13 @@ public class ServicioServiceImpl implements ServicioService {
 
     public ServicioServiceImpl(ServicioRepository repo) { this.repo = repo; }
 
+    /**
+     * Crea un servicio con nombre único.
+     *
+     * @param req comando con nombre, descripción y precio base.
+     * @return DTO creado.
+     * @throws IllegalArgumentException si validación falla o nombre duplicado.
+     */
     @Override
     public ServicioRes crear(ServicioReq req) {
         validar(req);
@@ -41,6 +61,15 @@ public class ServicioServiceImpl implements ServicioService {
         }
     }
 
+    /**
+     * Actualiza datos editables. Mantiene unicidad de nombre.
+     *
+     * @param id  id del servicio.
+     * @param req comando con cambios.
+     * @return DTO actualizado.
+     * @throws NoSuchElementException   si no existe.
+     * @throws IllegalArgumentException si validación falla o nombre duplicado.
+     */
     @Override
     public ServicioRes actualizar(Long id, ServicioReq req) {
         validar(req);
@@ -61,6 +90,14 @@ public class ServicioServiceImpl implements ServicioService {
         }
     }
 
+    /**
+     * Cambia el estado activo.
+     *
+     * @param id     id del servicio.
+     * @param activo nuevo estado.
+     * @return DTO actualizado.
+     * @throws NoSuchElementException si no existe.
+     */
     @Override
     public ServicioRes activar(Long id, boolean activo) {
         Servicio s = repo.findById(id).orElseThrow(() -> new NoSuchElementException(ERR_NO_ENCONTRADO));
@@ -68,12 +105,28 @@ public class ServicioServiceImpl implements ServicioService {
         return map(repo.save(s));
     }
 
+    /**
+     * Obtiene un servicio por id.
+     *
+     * @param id identificador.
+     * @return DTO del servicio.
+     * @throws NoSuchElementException si no existe.
+     */
     @Override
     @Transactional(readOnly = true)
     public ServicioRes obtener(Long id) {
         return map(repo.findById(id).orElseThrow(() -> new NoSuchElementException(ERR_NO_ENCONTRADO)));
     }
 
+    /**
+     * Lista servicios con filtro por nombre y estado.
+     *
+     * @param q     texto a buscar en nombre (opcional).
+     * @param activo filtro por estado (opcional).
+     * @param page  página base 0.
+     * @param size  tamaño de página.
+     * @return página de DTOs.
+     */
     @Override
     @Transactional(readOnly = true)
     public Page<ServicioRes> listar(String q, Boolean activo, int page, int size) {
@@ -90,6 +143,12 @@ public class ServicioServiceImpl implements ServicioService {
         return repo.findAll(spec, pageable).map(this::map);
     }
 
+    /**
+     * Valida reglas de entrada.
+     *
+     * @param r request.
+     * @throws IllegalArgumentException si nombre vacío o precioBase negativo.
+     */
     private void validar(ServicioReq r) {
         if (r.getNombre() == null || r.getNombre().isBlank())
             throw new IllegalArgumentException("nombre requerido");
@@ -97,10 +156,23 @@ public class ServicioServiceImpl implements ServicioService {
             throw new IllegalArgumentException("precio_base >= 0");
     }
 
+    /**
+     * Normaliza nombre colapsando espacios y trim.
+     *
+     * @param nombre texto original.
+     * @return nombre normalizado.
+     */
     private String normalizarNombre(String nombre) {
         return nombre.trim().replaceAll("\\s+", " ");
     }
 
+    /**
+     * Aplica campos editables a la entidad.
+     *
+     * @param r request.
+     * @param s entidad destino.
+     * @return entidad modificada.
+     */
     private Servicio aplicar(ServicioReq r, Servicio s) {
         s.setDescripcion(r.getDescripcion());
         s.setPrecioBase(r.getPrecioBase());
@@ -108,6 +180,12 @@ public class ServicioServiceImpl implements ServicioService {
         return s;
     }
 
+    /**
+     * Mapea entidad a DTO.
+     *
+     * @param s entidad servicio.
+     * @return DTO.
+     */
     private ServicioRes map(Servicio s) {
         return ServicioRes.builder()
                 .id(s.getId())

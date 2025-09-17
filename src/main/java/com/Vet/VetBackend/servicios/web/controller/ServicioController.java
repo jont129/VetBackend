@@ -46,7 +46,7 @@ public class ServicioController {
     }
 
     /**
-     * PATCH /api/servicios/{id}/estado?activo=true|false
+         * PATCH /api/servicios/{id}/estado?activo=true|false
      * Activa/Desactiva (eliminación lógica).
      * Respuestas: 200 OK, 404
      */
