@@ -3,6 +3,9 @@ package com.Vet.VetBackend.servicios.web.controller;
 
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger; import org.slf4j.LoggerFactory;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -12,8 +15,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.*;
 
-@RestControllerAdvice
+@Order(Ordered.LOWEST_PRECEDENCE)
+// ✅ Aplica SOLO a tu app; no intercepta controladores de springdoc
+@RestControllerAdvice(basePackages = "com.Vet.VetBackend")
 public class RestExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(RestExceptionHandler.class);
 
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Map<String, Object>> notFound(NoSuchElementException ex) {
@@ -25,53 +32,42 @@ public class RestExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err("BAD_REQUEST", ex.getMessage()));
     }
 
-    /** Body JSON inválido o Content-Type incorrecto */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> badJson(HttpMessageNotReadableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(err("BAD_JSON", "cuerpo inválido o Content-Type ausente/incorrecto"));
     }
 
-    /** Path/query param con tipo incorrecto (p.ej., id no numérico) */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, Object>> typeMismatch(MethodArgumentTypeMismatchException ex) {
         String msg = "parámetro '" + ex.getName() + "' inválido";
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(err("TYPE_MISMATCH", msg));
     }
 
-    /** Bean Validation en body */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> bodyValidation(MethodArgumentNotValidException ex) {
         Map<String, Object> payload = err("VALIDATION_ERROR", "entrada inválida");
         payload.put("fields", ex.getBindingResult().getFieldErrors().stream()
-                .map(f -> Map.of(
-                        "field", f.getField(),
-                        "message", Objects.toString(f.getDefaultMessage(), "inválido")
-                ))
+                .map(f -> Map.of("field", f.getField(), "message", Objects.toString(f.getDefaultMessage(), "inválido")))
                 .toList());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(payload);
     }
 
-    /** Bean Validation en params/path */
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<Map<String, Object>> paramValidation(ConstraintViolationException ex) {
         Map<String, Object> payload = err("VALIDATION_ERROR", "parámetros inválidos");
         payload.put("violations", ex.getConstraintViolations().stream()
-                .map(v -> Map.of(
-                        "param", v.getPropertyPath().toString(),
-                        "message", Objects.toString(v.getMessage(), "inválido")
-                ))
+                .map(v -> Map.of("param", v.getPropertyPath().toString(),
+                        "message", Objects.toString(v.getMessage(), "inválido")))
                 .toList());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(payload);
     }
 
-    /** Unicidad / FK */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> conflict(DataIntegrityViolationException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(err("CONFLICT", "violación de integridad"));
     }
 
-    /** Problemas de persistencia típicos (p.ej., falta AUTO_INCREMENT) */
     @ExceptionHandler(PersistenceException.class)
     public ResponseEntity<Map<String, Object>> persistence(PersistenceException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -80,6 +76,7 @@ public class RestExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> unhandled(Exception ex) {
+        log.error("Unhandled exception", ex); // Para ver la causa real si ocurre en tus endpoints
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err("ERROR", "error inesperado"));
     }
 

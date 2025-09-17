@@ -2,7 +2,6 @@ package com.Vet.VetBackend.facturacion.web.controller;
 
 import com.Vet.VetBackend.facturacion.app.PagoService;
 import com.Vet.VetBackend.facturacion.web.dto.PagoDTO;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -10,9 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/pagos")
@@ -22,14 +23,10 @@ public class PagoController {
     @Autowired
     private PagoService pagoService;
 
-    // ========== OPERACIONES CRUD ==========
+    /* ================== CRUD ================== */
 
-    /**
-     * Registrar nuevo pago
-     * POST /api/pagos
-     */
     @PostMapping
-    public ResponseEntity<?> registrarPago(@RequestBody PagoRequest request) {
+    public ResponseEntity<PagoDTO> registrarPago(@RequestBody PagoRequest request) {
         try {
             PagoDTO nuevoPago = pagoService.registrarPago(
                     request.getFacturaId(),
@@ -39,286 +36,196 @@ public class PagoController {
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(nuevoPago);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error interno del servidor"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Obtener pago por ID
-     * GET /api/pagos/{id}
-     */
     @GetMapping("/{id}")
-    public ResponseEntity<?> obtenerPago(@PathVariable Long id) {
+    public ResponseEntity<PagoDTO> obtenerPago(@PathVariable("id") Long id) {
         try {
             Optional<PagoDTO> pago = pagoService.obtenerPagoPorId(id);
-            if (pago.isPresent()) {
-                return ResponseEntity.ok(pago.get());
-            } else {
-                return ResponseEntity.notFound().build();
-            }
+            return pago.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener el pago"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Obtener pagos por factura
-     * GET /api/pagos/factura/{facturaId}
-     */
     @GetMapping("/factura/{facturaId}")
-    public ResponseEntity<?> obtenerPagosPorFactura(@PathVariable Long facturaId) {
+    public ResponseEntity<List<PagoDTO>> obtenerPagosPorFactura(@PathVariable("facturaId") Long facturaId) {
         try {
-            List<PagoDTO> pagos = pagoService.obtenerPagosPorFactura(facturaId);
-            return ResponseEntity.ok(pagos);
+            return ResponseEntity.ok(pagoService.obtenerPagosPorFactura(facturaId));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener pagos de la factura"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Obtener pagos por método
-     * GET /api/pagos/metodo/{metodo}
-     */
     @GetMapping("/metodo/{metodo}")
-    public ResponseEntity<?> obtenerPagosPorMetodo(@PathVariable String metodo) {
+    public ResponseEntity<List<PagoDTO>> obtenerPagosPorMetodo(@PathVariable("metodo") String metodo) {
         try {
-            List<PagoDTO> pagos = pagoService.obtenerPagosPorMetodo(metodo);
-            return ResponseEntity.ok(pagos);
+            return ResponseEntity.ok(pagoService.obtenerPagosPorMetodo(metodo));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener pagos por método"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Obtener pagos en período
-     * GET /api/pagos/periodo?fechaInicio=&fechaFin=
-     */
     @GetMapping("/periodo")
-    public ResponseEntity<?> obtenerPagosEnPeriodo(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin) {
+    public ResponseEntity<List<PagoDTO>> obtenerPagosEnPeriodo(
+            @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
+            @RequestParam("fechaFin")    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin) {
         try {
-            List<PagoDTO> pagos = pagoService.obtenerPagosEnPeriodo(fechaInicio, fechaFin);
-            return ResponseEntity.ok(pagos);
+            return ResponseEntity.ok(pagoService.obtenerPagosEnPeriodo(fechaInicio, fechaFin));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener pagos en período"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Obtener pagos de un cliente
-     * GET /api/pagos/cliente/{clienteId}
-     */
     @GetMapping("/cliente/{clienteId}")
-    public ResponseEntity<?> obtenerPagosPorCliente(@PathVariable Long clienteId) {
+    public ResponseEntity<List<PagoDTO>> obtenerPagosPorCliente(@PathVariable("clienteId") Long clienteId) {
         try {
-            List<PagoDTO> pagos = pagoService.obtenerPagosPorCliente(clienteId);
-            return ResponseEntity.ok(pagos);
+            return ResponseEntity.ok(pagoService.obtenerPagosPorCliente(clienteId));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener pagos del cliente"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Anular pago
-     * DELETE /api/pagos/{id}
-     */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> anularPago(@PathVariable Long id,
-                                        @RequestBody(required = false) AnulacionRequest request) {
+    public ResponseEntity<SuccessResponse> anularPago(@PathVariable("id") Long id,
+                                                      @RequestBody(required = false) AnulacionRequest request) {
         try {
             String motivo = request != null ? request.getMotivo() : "Sin motivo especificado";
             pagoService.anularPago(id, motivo);
             return ResponseEntity.ok(new SuccessResponse("Pago anulado correctamente"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al anular pago"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // ========== CONSULTAS Y VALIDACIONES ==========
+    /* ============ CONSULTAS / VALIDACIONES ============ */
 
-    /**
-     * Obtener total pagado por factura
-     * GET /api/pagos/factura/{facturaId}/total
-     */
     @GetMapping("/factura/{facturaId}/total")
-    public ResponseEntity<?> obtenerTotalPagado(@PathVariable Long facturaId) {
+    public ResponseEntity<TotalResponse> obtenerTotalPagado(@PathVariable("facturaId") Long facturaId) {
         try {
             BigDecimal totalPagado = pagoService.obtenerTotalPagado(facturaId);
             return ResponseEntity.ok(new TotalResponse(totalPagado));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener total pagado"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Validar si se puede registrar un pago
-     * GET /api/pagos/validar?facturaId=&monto=
-     */
     @GetMapping("/validar")
-    public ResponseEntity<?> validarPago(@RequestParam Long facturaId,
-                                         @RequestParam BigDecimal monto) {
+    public ResponseEntity<ValidacionResponse> validarPago(@RequestParam("facturaId") Long facturaId,
+                                                          @RequestParam("monto") BigDecimal monto) {
         try {
             boolean puedeRegistrar = pagoService.puedeRegistrarPago(facturaId, monto);
             BigDecimal saldoDespues = pagoService.calcularSaldoDespuesPago(facturaId, monto);
-
-            ValidacionResponse response = new ValidacionResponse(puedeRegistrar, saldoDespues);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(new ValidacionResponse(puedeRegistrar, saldoDespues));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al validar pago"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Obtener último pago de factura
-     * GET /api/pagos/factura/{facturaId}/ultimo
-     */
     @GetMapping("/factura/{facturaId}/ultimo")
-    public ResponseEntity<?> obtenerUltimoPago(@PathVariable Long facturaId) {
+    public ResponseEntity<PagoDTO> obtenerUltimoPago(@PathVariable("facturaId") Long facturaId) {
         try {
             Optional<PagoDTO> ultimoPago = pagoService.obtenerUltimoPago(facturaId);
-            if (ultimoPago.isPresent()) {
-                return ResponseEntity.ok(ultimoPago.get());
-            } else {
-                return ResponseEntity.notFound().build();
-            }
+            return ultimoPago.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener último pago"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // ========== ESTADÍSTICAS Y REPORTES ==========
+    /* ============ ESTADÍSTICAS (con DTOs propios) ============ */
 
-    /**
-     * Obtener recaudación por método
-     * GET /api/pagos/estadisticas/metodos
-     */
     @GetMapping("/estadisticas/metodos")
-    public ResponseEntity<?> obtenerRecaudacionPorMetodo() {
-        try {
-            List<PagoService.RecaudacionPorMetodo> recaudacion =
-                    pagoService.obtenerRecaudacionPorMetodo();
-            return ResponseEntity.ok(recaudacion);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener estadísticas por método"));
-        }
+    public ResponseEntity<List<RecaudacionPorMetodoRes>> obtenerRecaudacionPorMetodo() {
+        var data = pagoService.obtenerRecaudacionPorMetodo()
+                .stream()
+                .map(r -> new RecaudacionPorMetodoRes(
+                        r.getMetodo(),
+                        r.getTotalRecaudado()          // 👈 antes getTotal()
+                ))
+                .toList();
+        return ResponseEntity.ok(data);
     }
 
-    /**
-     * Obtener recaudación diaria
-     * GET /api/pagos/estadisticas/diaria?fechaInicio=&fechaFin=
-     */
     @GetMapping("/estadisticas/diaria")
-    public ResponseEntity<?> obtenerRecaudacionDiaria(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin) {
-        try {
-            List<PagoService.RecaudacionDiaria> recaudacion =
-                    pagoService.obtenerRecaudacionDiaria(fechaInicio, fechaFin);
-            return ResponseEntity.ok(recaudacion);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener recaudación diaria"));
-        }
+    public ResponseEntity<List<RecaudacionDiariaRes>> obtenerRecaudacionDiaria(
+            @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
+            @RequestParam("fechaFin")    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin) {
+
+        var data = pagoService.obtenerRecaudacionDiaria(fechaInicio, fechaFin)
+                .stream()
+                .map(r -> new RecaudacionDiariaRes(
+                        r.getFecha().toLocalDate(),     // 👈 service devuelve java.sql.Date
+                        r.getTotalRecaudado()           // 👈 antes getTotal()
+                ))
+                .toList();
+        return ResponseEntity.ok(data);
     }
 
-    /**
-     * Obtener total recaudado en período
-     * GET /api/pagos/estadisticas/total?fechaInicio=&fechaFin=
-     */
     @GetMapping("/estadisticas/total")
-    public ResponseEntity<?> obtenerTotalRecaudado(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin) {
+    public ResponseEntity<TotalResponse> obtenerTotalRecaudado(
+            @RequestParam("fechaInicio") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaInicio,
+            @RequestParam("fechaFin")    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fechaFin) {
         try {
             BigDecimal totalRecaudado = pagoService.obtenerTotalRecaudado(fechaInicio, fechaFin);
             return ResponseEntity.ok(new TotalResponse(totalRecaudado));
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener total recaudado"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    /**
-     * Obtener estadísticas de hoy
-     * GET /api/pagos/estadisticas/hoy
-     */
     @GetMapping("/estadisticas/hoy")
-    public ResponseEntity<?> obtenerEstadisticasHoy() {
-        try {
-            PagoService.EstadisticasPagosHoy estadisticas =
-                    pagoService.obtenerEstadisticasHoy();
-            return ResponseEntity.ok(estadisticas);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse("Error al obtener estadísticas de hoy"));
-        }
+    public ResponseEntity<EstadisticasPagosHoyRes> obtenerEstadisticasHoy() {
+        var s = pagoService.obtenerEstadisticasHoy();
+        return ResponseEntity.ok(new EstadisticasPagosHoyRes(
+                s.getCantidadPagos(),               // 👈 antes getCantidad()
+                s.getTotalRecaudado()              // 👈 antes getTotal()
+        ));
     }
 
-    // ========== CLASES INTERNAS PARA REQUESTS Y RESPONSES ==========
+    /* ========== DTOs request/response (públicos) ========== */
 
     public static class PagoRequest {
         private Long facturaId;
         private String metodo;
         private BigDecimal monto;
         private LocalDateTime fechaPago;
-
         public PagoRequest() {}
-
         public Long getFacturaId() { return facturaId; }
         public void setFacturaId(Long facturaId) { this.facturaId = facturaId; }
-
         public String getMetodo() { return metodo; }
         public void setMetodo(String metodo) { this.metodo = metodo; }
-
         public BigDecimal getMonto() { return monto; }
         public void setMonto(BigDecimal monto) { this.monto = monto; }
-
         public LocalDateTime getFechaPago() { return fechaPago; }
         public void setFechaPago(LocalDateTime fechaPago) { this.fechaPago = fechaPago; }
     }
 
     public static class AnulacionRequest {
         private String motivo;
-
         public AnulacionRequest() {}
-
         public String getMotivo() { return motivo; }
         public void setMotivo(String motivo) { this.motivo = motivo; }
     }
 
     public static class TotalResponse {
         private BigDecimal total;
-
         public TotalResponse(BigDecimal total) { this.total = total; }
-
         public BigDecimal getTotal() { return total; }
     }
 
     public static class ValidacionResponse {
         private boolean puedeRegistrar;
         private BigDecimal saldoDespuesPago;
-
         public ValidacionResponse(boolean puedeRegistrar, BigDecimal saldoDespuesPago) {
             this.puedeRegistrar = puedeRegistrar;
             this.saldoDespuesPago = saldoDespuesPago;
         }
-
         public boolean isPuedeRegistrar() { return puedeRegistrar; }
         public BigDecimal getSaldoDespuesPago() { return saldoDespuesPago; }
     }
@@ -326,26 +233,43 @@ public class PagoController {
     public static class SuccessResponse {
         private String mensaje;
         private LocalDateTime timestamp;
-
         public SuccessResponse(String mensaje) {
             this.mensaje = mensaje;
             this.timestamp = LocalDateTime.now();
         }
-
         public String getMensaje() { return mensaje; }
         public LocalDateTime getTimestamp() { return timestamp; }
     }
 
-    public static class ErrorResponse {
-        private String mensaje;
-        private LocalDateTime timestamp;
+    /* ===== DTOs para estadísticas (públicos y simples) ===== */
 
-        public ErrorResponse(String mensaje) {
-            this.mensaje = mensaje;
-            this.timestamp = LocalDateTime.now();
+    public static class RecaudacionPorMetodoRes {
+        private String metodo;
+        private BigDecimal total;
+        public RecaudacionPorMetodoRes(String metodo, BigDecimal total) {
+            this.metodo = metodo; this.total = total;
         }
+        public String getMetodo() { return metodo; }
+        public BigDecimal getTotal() { return total; }
+    }
 
-        public String getMensaje() { return mensaje; }
-        public LocalDateTime getTimestamp() { return timestamp; }
+    public static class RecaudacionDiariaRes {
+        private LocalDate fecha;
+        private BigDecimal total;
+        public RecaudacionDiariaRes(LocalDate fecha, BigDecimal total) {
+            this.fecha = fecha; this.total = total;
+        }
+        public LocalDate getFecha() { return fecha; }
+        public BigDecimal getTotal() { return total; }
+    }
+
+    public static class EstadisticasPagosHoyRes {
+        private Integer cantidad;
+        private BigDecimal total;
+        public EstadisticasPagosHoyRes(Integer cantidad, BigDecimal total) {
+            this.cantidad = cantidad; this.total = total;
+        }
+        public Integer getCantidad() { return cantidad; }
+        public BigDecimal getTotal() { return total; }
     }
 }
