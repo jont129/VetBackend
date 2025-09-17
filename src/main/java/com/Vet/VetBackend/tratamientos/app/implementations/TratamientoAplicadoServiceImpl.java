@@ -9,53 +9,56 @@ import org.springframework.stereotype.Service;
 
 
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
+@Transactional
 public class TratamientoAplicadoServiceImpl implements TratamientoAplicadoService {
 
-    private final TratamientoAplicadoRepository repository;
+    private final TratamientoAplicadoRepository repo;
 
-    public TratamientoAplicadoServiceImpl(TratamientoAplicadoRepository repository) {
-        this.repository = repository;
+    public TratamientoAplicadoServiceImpl(TratamientoAplicadoRepository repo) {
+        this.repo = repo;
     }
 
     @Override
     public List<TratamientoAplicadoRes> listarPorCita(Long citaId) {
-        return repository.findByCitaId(citaId).stream()
-                .map(TratamientoAplicadoRes::fromEntity).toList();
+        return repo.findByCitaId(citaId)
+                .stream().map(TratamientoAplicadoRes::fromEntity).toList();
     }
 
     @Override
     public List<TratamientoAplicadoRes> listarPorHistorial(Long historialId) {
-        return repository.findByHistorialId(historialId).stream()
-                .map(TratamientoAplicadoRes::fromEntity).toList();
+        return repo.findByHistorialId(historialId)
+                .stream().map(TratamientoAplicadoRes::fromEntity).toList();
     }
 
     @Override
     public TratamientoAplicadoRes registrar(TratamientoAplicadoReq req) {
-        TratamientoAplicado ta = new TratamientoAplicado();
-        ta.setCitaId(req.getCitaId());
-        ta.setTratamientoId(req.getTratamientoId());
-        ta.setHistorialId(req.getHistorialId());
-        ta.setVeterinarioId(req.getVeterinarioId());
-        ta.setEstado("Planificado");
-        ta.setObservaciones(req.getObservaciones());
-        return TratamientoAplicadoRes.fromEntity(repository.save(ta));
+        TratamientoAplicado entity = new TratamientoAplicado();
+        entity.setCitaId(req.getCitaId());
+        entity.setTratamientoId(req.getTratamientoId());
+        entity.setVeterinarioId(req.getVeterinarioId());
+        entity.setEstado("Pendiente");
+        entity.setObservaciones(req.getObservaciones());
+        return TratamientoAplicadoRes.fromEntity(repo.save(entity));
     }
 
     @Override
     public TratamientoAplicadoRes actualizarEstado(Long id, String estado) {
-        TratamientoAplicado ta = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tratamiento aplicado no encontrado"));
-        ta.setEstado(estado);
-        return TratamientoAplicadoRes.fromEntity(repository.save(ta));
+        TratamientoAplicado entity = repo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("TratamientoAplicado no encontrado"));
+        entity.setEstado(estado);
+        return TratamientoAplicadoRes.fromEntity(repo.save(entity));
     }
 
     @Override
     public TratamientoAplicadoRes agregarObservaciones(Long id, String observaciones) {
-        TratamientoAplicado ta = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tratamiento aplicado no encontrado"));
-        ta.setObservaciones(observaciones);
-        return TratamientoAplicadoRes.fromEntity(repository.save(ta));
+        TratamientoAplicado entity = repo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("TratamientoAplicado no encontrado"));
+        entity.setObservaciones(observaciones);
+        return TratamientoAplicadoRes.fromEntity(repo.save(entity));
     }
 }

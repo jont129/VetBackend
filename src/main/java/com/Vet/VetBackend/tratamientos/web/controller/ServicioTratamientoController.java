@@ -18,10 +18,14 @@ public class ServicioTratamientoController {
         this.service = service;
     }
 
-    // GET /api/servicio-tratamientos?servicioId=1
+    // GET /api/servicio-tratamientos   (trae todos o por servicio si se pasa servicioId)
     @GetMapping
-    public List<ServicioTratamientoRes> listar(@RequestParam Long servicioId) {
-        return service.listarPorServicio(servicioId);
+    public List<ServicioTratamientoRes> listar(
+            @RequestParam(value = "servicioId", required = false) Long servicioId) {
+        if (servicioId != null) {
+            return service.listarPorServicio(servicioId);
+        }
+        return service.listarTodos();
     }
 
     // POST /api/servicio-tratamientos

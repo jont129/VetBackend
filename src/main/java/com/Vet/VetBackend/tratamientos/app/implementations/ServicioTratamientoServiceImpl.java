@@ -37,4 +37,12 @@ public class ServicioTratamientoServiceImpl implements ServicioTratamientoServic
     public void eliminarAsociacion(Long id) {
         repository.deleteById(id);
     }
+    @Override
+    public List<ServicioTratamientoRes> listarTodos() {
+        return repository.findAll()
+                .stream()
+                .map(ServicioTratamientoRes::fromEntity)
+                .toList();
+    }
+
 }
